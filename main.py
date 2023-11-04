@@ -1,4 +1,5 @@
 import os
+import json
 import click
 import webvtt
 import datetime
@@ -88,6 +89,7 @@ def split_video(vtt, video, output='./', duration=2):
     step_seconds = 0
     step_captions = []
     num = 0
+    clips = []
     for caption in webvtt.read(vtt):
         if step_seconds == 0:
             start_clip = caption.start
@@ -111,6 +113,10 @@ def split_video(vtt, video, output='./', duration=2):
                 # codec='h264'
             )
             write_file(output + f'clip{num}.vtt', step_captions)
+            clips.append({
+                'vtt': f'clip{num}.vtt',
+                'video': f'clip{num}' + '.mp4'
+            })
             step_captions = []
             step_seconds = 0
 
@@ -129,6 +135,12 @@ def split_video(vtt, video, output='./', duration=2):
             # codec='h264'
         )
         write_file(output + f'clip{num}.vtt', step_captions)
+        clips.append({
+            'vtt': f'clip{num}.vtt',
+            'video': f'clip{num}' + '.mp4'
+        })
+    with open(output + 'clips.json', 'wt+') as f:
+        f.write(json.dumps(clips, indent=True))
 
 
 if __name__ == '__main__':
