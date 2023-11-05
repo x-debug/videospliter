@@ -54,15 +54,15 @@ def write_file(fname, captions, baseTime='00:00:00.000'):
             caption.start = start
             caption.end = end
         writer.write(captions, f)
-        f.flush
+        f.flush()
 
 
 @cli.command()
-@click.option('--vtt', prompt='Your vtt file', help='The vtt file of the video')
 @click.option('--video', prompt='Your video file', help='The video file to split')
+@click.option('--vtt', prompt='Your vtt file', help='The vtt file of the video', default='')
 @click.option('--output', prompt='Your output folder', help='The output folder', default='./')
 @click.option('--duration', prompt='Your duration(minutes)', help='The duration of the split', default=2, type=int)
-def split_video(vtt, video, output='./', duration=2):
+def split_video(video, vtt='', output='./', duration=2):
     """Simple program that split a video based on a vtt file"""
 
     if output[-1] != '/':
@@ -73,6 +73,35 @@ def split_video(vtt, video, output='./', duration=2):
 
     duration = duration * 60  # seconds
     input_video = VideoFileClip(video)
+
+    if vtt == '':
+        clips = []
+        num = 0
+        startSeconds = 0
+        endSeconds = startSeconds + duration
+        while endSeconds < input_video.duration:
+            num += 1
+            input_video.subclip(startSeconds, endSeconds).write_videofile(
+                output + f'clip{num}' + '.mp4',
+                fps=input_video.fps,
+            )
+            startSeconds = endSeconds
+            endSeconds = startSeconds + duration
+            clips.append({
+                'video': f'clip{num}' + '.mp4'
+            })
+
+        input_video.subclip(startSeconds, input_video.duration).write_videofile(
+            output + f'clip{num}' + '.mp4',
+            fps=input_video.fps,
+        )
+        clips.append({
+            'video': f'clip{num}' + '.mp4'
+        })
+        with open(output + 'clips.json', 'wt+') as f:
+            f.write(json.dumps(clips, indent=True))
+        return
+
     click.echo('Splitting the video %s based on the vtt file %s' %
                (video, vtt))
 
@@ -85,9 +114,6 @@ def split_video(vtt, video, output='./', duration=2):
     num = 0
     clips = []
     for caption in webvtt.read(vtt):
-        # if step_seconds == 0:
-        #     start_clip = caption.start
-
         start = convert_to_seconds(caption.start)
         end = convert_to_seconds(caption.end)
 
@@ -99,19 +125,18 @@ def split_video(vtt, video, output='./', duration=2):
             base_time = end_clip
             end_clip = caption.end
             num += 1
-            input_video.subclip(start_clip, end_clip).write_videofile(
+            # 在创建视频剪辑时，考虑到视频和字幕可能存在的时间差
+            start_time = convert_to_seconds(start_clip)
+            end_time = convert_to_seconds(end_clip)
+            input_video.subclip(start_time, end_time).write_videofile(
                 output + f'clip{num}' + '.mp4',
                 fps=frames,
-                # bitrate="4000k",
-                # threads=1,
-                # preset='ultrafast',
-                # codec='h264'
             )
             click.echo('Start: %s, End: %s, BaseTime: %s, Text: %s' %
                        (start_clip, end_clip, base_time, caption.text))
             click.echo(
                 f'StartClip: {step_captions[0].start}, EndClip: {step_captions[-1].end}')
-            write_file(output + f'clip{num}.vtt', step_captions, base_time)
+            write_file(output + f'clip{num}.vtt', step_captions, start_clip)
             clips.append({
                 'vtt': f'clip{num}.vtt',
                 'video': f'clip{num}' + '.mp4'
@@ -124,20 +149,19 @@ def split_video(vtt, video, output='./', duration=2):
         base_time = end_clip
         end_clip = caption.end
         num += 1
-        input_video.subclip(start_clip, end_clip).write_videofile(
+        # 在创建视频剪辑时，考虑到视频和字幕可能存在的时间差
+        start_time = convert_to_seconds(start_clip)
+        end_time = convert_to_seconds(end_clip)
+        input_video.subclip(start_time, end_time).write_videofile(
             output + f'clip{num}' + '.mp4',
             fps=frames,
-            # bitrate="4000k",
-            # threads=1,
-            # preset='ultrafast',
-            # codec='h264'
         )
         step_captions.append(caption)
         click.echo('Start: %s, End: %s, BaseTime: %s, Text: %s' %
                    (start_clip, end_clip, base_time, caption.text))
         click.echo(
             f'StartClip: {step_captions[0].start}, EndClip: {step_captions[-1].end}')
-        write_file(output + f'clip{num}.vtt', step_captions, base_time)
+        write_file(output + f'clip{num}.vtt', step_captions, start_clip)
         clips.append({
             'vtt': f'clip{num}.vtt',
             'video': f'clip{num}' + '.mp4'
