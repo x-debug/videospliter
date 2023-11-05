@@ -57,6 +57,10 @@ def write_file(fname, captions, baseTime='00:00:00.000'):
         f.flush()
 
 
+def clip_num(label, n):
+    return f'{label}{n:02d}'
+
+
 @cli.command()
 @click.option('--video', prompt='Your video file', help='The video file to split')
 @click.option('--vtt', prompt='Your vtt file', help='The vtt file of the video', default='')
@@ -82,21 +86,21 @@ def split_video(video, vtt='', output='./', duration=2):
         while endSeconds < input_video.duration:
             num += 1
             input_video.subclip(startSeconds, endSeconds).write_videofile(
-                output + f'clip{num}' + '.mp4',
+                output + clip_num('clip', num) + '.mp4',
                 fps=input_video.fps,
             )
             startSeconds = endSeconds
             endSeconds = startSeconds + duration
             clips.append({
-                'video': f'clip{num}' + '.mp4'
+                'video': clip_num('clip', num) + '.mp4'
             })
 
         input_video.subclip(startSeconds, input_video.duration).write_videofile(
-            output + f'clip{num}' + '.mp4',
+            output + clip_num('clip', num) + '.mp4',
             fps=input_video.fps,
         )
         clips.append({
-            'video': f'clip{num}' + '.mp4'
+            'video': clip_num('clip', num) + '.mp4'
         })
         with open(output + 'clips.json', 'wt+') as f:
             f.write(json.dumps(clips, indent=True))
@@ -129,7 +133,7 @@ def split_video(video, vtt='', output='./', duration=2):
             start_time = convert_to_seconds(start_clip)
             end_time = convert_to_seconds(end_clip)
             input_video.subclip(start_time, end_time).write_videofile(
-                output + f'clip{num}' + '.mp4',
+                output + clip_num('clip', num) + '.mp4',
                 fps=frames,
             )
             click.echo('Start: %s, End: %s, BaseTime: %s, Text: %s' %
@@ -139,7 +143,7 @@ def split_video(video, vtt='', output='./', duration=2):
             write_file(output + f'clip{num}.vtt', step_captions, start_clip)
             clips.append({
                 'vtt': f'clip{num}.vtt',
-                'video': f'clip{num}' + '.mp4'
+                'video': clip_num('clip', num) + '.mp4'
             })
             step_captions = []
             step_seconds = 0
@@ -153,7 +157,7 @@ def split_video(video, vtt='', output='./', duration=2):
         start_time = convert_to_seconds(start_clip)
         end_time = convert_to_seconds(end_clip)
         input_video.subclip(start_time, end_time).write_videofile(
-            output + f'clip{num}' + '.mp4',
+            output + clip_num('clip', num) + '.mp4',
             fps=frames,
         )
         step_captions.append(caption)
@@ -164,7 +168,7 @@ def split_video(video, vtt='', output='./', duration=2):
         write_file(output + f'clip{num}.vtt', step_captions, start_clip)
         clips.append({
             'vtt': f'clip{num}.vtt',
-            'video': f'clip{num}' + '.mp4'
+            'video': clip_num('clip', num) + '.mp4'
         })
     with open(output + 'clips.json', 'wt+') as f:
         f.write(json.dumps(clips, indent=True))
