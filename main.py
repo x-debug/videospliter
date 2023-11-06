@@ -92,7 +92,8 @@ def split_video(video, vtt='', output='./', duration=2):
             startSeconds = endSeconds
             endSeconds = startSeconds + duration
             clips.append({
-                'video': clip_num('clip', num) + '.mp4'
+                'video': clip_num('clip', num) + '.mp4',
+                'seconds': duration
             })
 
         input_video.subclip(startSeconds, input_video.duration).write_videofile(
@@ -100,7 +101,8 @@ def split_video(video, vtt='', output='./', duration=2):
             fps=input_video.fps,
         )
         clips.append({
-            'video': clip_num('clip', num) + '.mp4'
+            'video': clip_num('clip', num) + '.mp4',
+            'seconds': duration
         })
         with open(output + 'clips.json', 'wt+') as f:
             f.write(json.dumps(clips, indent=True))
